@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 
-const AdminMap = dynamic(() => import("./(dashboard)/dashboard/AdminMap"), {
+const AdminMap = dynamic(() => import("./AdminMap"), {
   ssr: false, // disable server-side rendering
 });
 
