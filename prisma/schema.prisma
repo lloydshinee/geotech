@@ -1,13 +1,11 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// prisma/schema.prisma
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../lib/generated/prisma"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "sqlite" // using SQLite
   url      = env("DATABASE_URL")
 }
 
@@ -21,7 +19,33 @@ model User {
   email     String   @unique
   firstName String
   lastName  String
+  password  String
   role      Role     @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // ✅ One user -> many saved locations
+  locations UserLocation[]
+}
+
+model UserLocation {
+  id     Int  @id @default(autoincrement())
+  user   User @relation(fields: [userId], references: [id])
+  userId Int
+
+  // ✅ Point coordinates
+  latitude  Float
+  longitude Float
+
+  // ✅ Extra info
+  name        String // e.g. "Home", "Work", "Vacation House"
+  description String? // optional notes
+
+  // ✅ (Optional) Store full GeoJSON (for polygons, zones, etc.)
+  geoJson Json? // e.g. polygon drawn from Leaflet
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }

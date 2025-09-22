@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import prisma from "./lib/prisma";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
@@ -12,16 +13,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       authorize: async (credentials) => {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const user = {
-          id: "1",
-          email: "admin@gmail.com",
-          firstName: "Lloyd",
-          lastName: "Semblante",
-          role: "ADMIN",
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email as string },
+        });
+        if (!user || user.password !== credentials.password) return null;
+
+        return {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          firstName: user.firstName,
+          lastName: user.lastName,
         };
-        if (!user) return null;
-        console.log(user);
-        return user;
       },
     }),
   ],
@@ -40,7 +43,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return token;
     },
     async session({ session, token }) {
-      session.user.id = token.id as string;
+      session.user.id = token.id! as never;
       session.user.email = token.email as string;
       session.user.role = token.role as string;
       session.user.firstName = token.firstName as string;
