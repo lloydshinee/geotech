@@ -17,3 +17,21 @@ export async function createLocation(data: FormData) {
     console.log(error);
   }
 }
+
+export async function getUserLocations(userId: number) {
+  try {
+    return await prisma.userLocation.findMany({ where: { userId } });
+  } catch (error) {
+    console.log(error);
+    throw new Error("Error");
+  }
+}
+
+export async function getUserLocation(locationId: number) {
+  try {
+    return await prisma.userLocation.findUnique({ where: { id: locationId } });
+  } catch (error) {
+    console.log(error);
+    throw new Error("Error");
+  }
+}
