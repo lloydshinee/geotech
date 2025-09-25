@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, Navigation, Save, X, Edit3, Map, Info } from "lucide-react";
+import { MapPin, Navigation, Save, Edit3, Map, Info } from "lucide-react";
 import { toast } from "sonner";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -12,14 +12,15 @@ import "leaflet-draw/dist/leaflet.draw.css";
 import "leaflet-draw";
 import { Textarea } from "@/components/ui/textarea";
 import { useSession } from "next-auth/react";
-import { createLocation } from "@/actions/locations.action";
+import { createLocation, updateLocation } from "@/actions/locations.action";
+import { UserLocation } from "@prisma/client";
 
-export default function LocationForm() {
+export default function LocationForm({ data }: { data?: UserLocation }) {
   const [isClient, setIsClient] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [lat, setLat] = useState<number | null>(null);
-  const [lng, setLng] = useState<number | null>(null);
+  const [name, setName] = useState(data?.name || "");
+  const [description, setDescription] = useState(data?.description || "");
+  const [lat, setLat] = useState<number | null>(data?.latitude || null);
+  const [lng, setLng] = useState<number | null>(data?.longitude || null);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
   const { data: session } = useSession();
@@ -42,6 +43,20 @@ export default function LocationForm() {
       zoomControl: false,
     }).setView([8.21337, 124.242851], 14);
     mapRef.current = map;
+
+    if (data?.latitude && data?.longitude) {
+      const existingMarker = L.marker([data.latitude, data.longitude], {
+        icon: L.divIcon({
+          html: '<div class="w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-lg"></div>',
+          className: "custom-marker",
+          iconSize: [16, 16],
+          iconAnchor: [8, 8],
+        }),
+      }).addTo(map);
+
+      markerRef.current = existingMarker;
+      map.setView([data.latitude, data.longitude], 16);
+    }
 
     // Add zoom control to top right
     L.control
@@ -112,7 +127,7 @@ export default function LocationForm() {
       map.remove();
       mapRef.current = null;
     };
-  }, [isClient]);
+  }, [isClient, data?.latitude, data?.longitude]);
 
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -193,37 +208,30 @@ export default function LocationForm() {
       formData.append("longitude", lng.toString());
       formData.append("userId", session?.user?.id.toString() || "");
 
-      await createLocation(formData);
+      if (data?.id) {
+        // Editing mode
+        await updateLocation(data.id.toString(), formData);
+        toast.success("Location updated successfully!");
+      } else {
+        // Creating mode
+        await createLocation(formData);
+        toast.success("Location saved successfully!");
+      }
 
-      // TODO: send to backend
-      toast.success("Location saved successfully!");
-
-      // Reset form
-      setName("");
-      setDescription("");
-      setLat(null);
-      setLng(null);
-
-      // Clear map
-      if (markerRef.current && mapRef.current) {
-        mapRef.current.removeLayer(markerRef.current);
-        markerRef.current = null;
+      // Reset only if creating new
+      if (!data?.id) {
+        setName("");
+        setDescription("");
+        setLat(null);
+        setLng(null);
+        if (markerRef.current && mapRef.current) {
+          mapRef.current.removeLayer(markerRef.current);
+          markerRef.current = null;
+        }
       }
     } catch (err) {
       console.error(err);
       toast.error("Failed to save location. Please try again.");
-    }
-  };
-
-  const handleReset = () => {
-    setName("");
-    setDescription("");
-    setLat(null);
-    setLng(null);
-
-    if (markerRef.current && mapRef.current) {
-      mapRef.current.removeLayer(markerRef.current);
-      markerRef.current = null;
     }
   };
 
@@ -232,17 +240,17 @@ export default function LocationForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto p-6">
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500 rounded-full mb-4 shadow-lg">
             <Map className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Add New Location
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            {data ? "Edit Location" : "Add New Location"}
           </h1>
-          <p className="text-gray-600 max-w-md mx-auto">
+          <p className="text-muted-foreground max-w-md mx-auto">
             Create a new location by filling in the details below and marking it
             on the interactive map
           </p>
@@ -251,10 +259,10 @@ export default function LocationForm() {
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Form Section */}
           <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-sm border p-6">
+            <div className="bg-background rounded-xl shadow-sm border p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Edit3 className="w-5 h-5 text-blue-500" />
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-foreground">
                   Location Details
                 </h2>
               </div>
@@ -263,7 +271,7 @@ export default function LocationForm() {
                 <div className="space-y-2">
                   <Label
                     htmlFor="name"
-                    className="text-sm font-medium text-gray-700"
+                    className="text-sm font-medium text-muted-foreground"
                   >
                     Location Name *
                   </Label>
@@ -279,7 +287,7 @@ export default function LocationForm() {
                 <div className="space-y-2">
                   <Label
                     htmlFor="description"
-                    className="text-sm font-medium text-gray-700"
+                    className="text-sm font-medium text-muted-foreground"
                   >
                     Description
                   </Label>
@@ -295,10 +303,10 @@ export default function LocationForm() {
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-white rounded-xl shadow-sm border p-6">
+            <div className="bg-background rounded-xl shadow-sm border p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Navigation className="w-5 h-5 text-blue-500" />
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-foreground">
                   Quick Location
                 </h2>
               </div>
@@ -323,7 +331,7 @@ export default function LocationForm() {
 
             {/* Coordinates Display */}
             {lat && lng && (
-              <div className="bg-blue-50 rounded-xl border border-blue-200 p-4">
+              <div className="bg-background rounded-xl border p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Info className="w-4 h-4 text-blue-600" />
                   <span className="text-sm font-medium text-blue-900">
@@ -344,24 +352,17 @@ export default function LocationForm() {
                 disabled={!name.trim() || !lat || !lng}
               >
                 <Save className="mr-2 h-5 w-5" />
-                Save Location
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleReset}
-                className="h-12 px-6 hover:bg-gray-50 transition-all duration-200"
-              >
-                <X className="h-5 w-5" />
+                {data ? "Update Location" : "Save Location"}
               </Button>
             </div>
           </div>
 
           {/* Map Section */}
           <div className="space-y-4">
-            <div className="bg-white rounded-xl shadow-sm border p-6">
+            <div className="bg-background rounded-xl shadow-sm border p-6">
               <div className="flex items-center gap-2 mb-4">
                 <MapPin className="w-5 h-5 text-blue-500" />
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-foreground">
                   Interactive Map
                 </h2>
               </div>
@@ -378,7 +379,7 @@ export default function LocationForm() {
                   />
                   {!lat && !lng && (
                     <div className="absolute inset-0 bg-black/5 rounded-lg flex items-center justify-center pointer-events-none">
-                      <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-lg">
+                      <div className="bg-background/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-lg">
                         <p className="text-sm text-gray-600">
                           Click the map tools to mark your location
                         </p>

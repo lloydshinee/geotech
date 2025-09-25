@@ -2,13 +2,15 @@ import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import prisma from "@/lib/prisma";
 import { LocationCard } from "./location-card";
+import { AddLocationBanner } from "./new/add-location";
 
 export default async function LocationsPage() {
   const locations = await prisma.userLocation.findMany();
 
   return (
-    <main>
+    <main className="p-4 space-y-4 rounded-none">
       <SiteHeader title="Locations" />
+      <AddLocationBanner />
       <section>
         {locations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] text-center px-4">

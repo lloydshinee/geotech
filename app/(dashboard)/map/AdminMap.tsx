@@ -23,7 +23,8 @@ export default function AdminMap() {
   const [isClient, setIsClient] = useState(false);
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    console.log(isClient);
+  }, [isClient]);
   useEffect(() => {
     if (mapRef.current) return;
     const tubodBounds: L.LatLngBoundsExpression = [

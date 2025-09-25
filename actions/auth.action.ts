@@ -4,7 +4,6 @@ import { signIn } from "@/auth";
 import { LoginFormData } from "@/components/login-form";
 import { RegisterFormData } from "@/components/register-form";
 import prisma from "@/lib/prisma";
-import { email } from "zod";
 
 export async function login(data: LoginFormData) {
   try {

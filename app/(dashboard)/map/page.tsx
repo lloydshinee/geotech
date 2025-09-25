@@ -7,10 +7,6 @@ import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
-const AdminMap = dynamic(() => import("./AdminMap"), {
-  ssr: false, // disable server-side rendering
-});
-
 const UserMap = dynamic(() => import("./UserMap"), {
   ssr: false, // disable server-side rendering
 });

@@ -16,6 +16,7 @@ import {
   Navigation,
   Trash2,
 } from "lucide-react";
+import Link from "next/link";
 
 export function LocationCard({ location }: { location: UserLocation }) {
   const formatDate = (dateString: string) => {
@@ -81,8 +82,13 @@ export function LocationCard({ location }: { location: UserLocation }) {
 
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="flex-1">
-            <MapIcon className="w-4 h-4 mr-2" />
-            View on Map
+            <Link
+              href={`/locations/${location.id}`}
+              className="flex items-center gap-2"
+            >
+              <MapIcon className="w-4 h-4 mr-2" />
+              Open
+            </Link>
           </Button>
           <Button variant="outline" size="sm" className="px-3">
             <Edit className="w-4 h-4" />
