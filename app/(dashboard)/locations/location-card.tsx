@@ -17,6 +17,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
+import DeleleteLocationButton from "./delete-button";
 
 export function LocationCard({ location }: { location: UserLocation }) {
   const formatDate = (dateString: string) => {
@@ -90,16 +91,7 @@ export function LocationCard({ location }: { location: UserLocation }) {
               Open
             </Link>
           </Button>
-          <Button variant="outline" size="sm" className="px-3">
-            <Edit className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="px-3 text-destructive hover:text-destructive hover:bg-destructive/10"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
+          <DeleleteLocationButton locationId={location.id} />
         </div>
       </CardContent>
     </Card>

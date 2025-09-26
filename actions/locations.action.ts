@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 
 export async function createLocation(data: FormData) {
   try {
@@ -53,6 +54,7 @@ export async function getUserLocations(userId: number) {
 export async function deleteUserLocation(locationId: number) {
   try {
     await prisma.userLocation.delete({ where: { id: locationId } });
+    revalidatePath("/");
   } catch (error) {
     console.log(error);
   }
