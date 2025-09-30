@@ -2,6 +2,7 @@ import { getUserLocation } from "@/actions/locations.action";
 import React from "react";
 import { Location } from "./Location";
 import { SiteHeader } from "@/components/site-header";
+import { Affected } from "./affected";
 
 export default async function LocationPage({
   params,
@@ -18,6 +19,7 @@ export default async function LocationPage({
     <main>
       <SiteHeader title="Location" />
       <Location location={location} />
+      <Affected locationId={location.id} />
     </main>
   );
 }

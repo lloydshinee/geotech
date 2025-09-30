@@ -25,6 +25,7 @@ const eslintConfig = [
       "@typescript-eslint/no-empty-object-type": "off",
       "@typescript-eslint/no-extra-non-null-assertion": "off",
       "jsx-a11y/alt-text": "off",
+      "@typescript-eslint/no-namespace": "off",
     },
   },
 ];

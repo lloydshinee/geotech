@@ -1,14 +1,18 @@
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
-import prisma from "@/lib/prisma";
 import { LocationCard } from "./location-card";
 import { AddLocationBanner } from "./new/add-location";
+import { auth } from "@/auth";
+import { getUserLocations } from "@/actions/locations.action";
 
 export default async function LocationsPage() {
-  const locations = await prisma.userLocation.findMany();
+  const session = await auth();
+  if (!session) return;
+
+  const locations = await getUserLocations(session.user.id);
 
   return (
-    <main className="p-4 space-y-4 rounded-none">
+    <main className="space-y-4 rounded-none">
       <SiteHeader title="Locations" />
       <AddLocationBanner />
       <section>

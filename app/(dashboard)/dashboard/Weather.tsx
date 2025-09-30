@@ -335,13 +335,6 @@ export default function WeatherDashboard({ userId }: { userId: number }) {
         </div>
 
         <AddLocationFAB />
-
-        <div className="mt-8 text-center text-sm text-muted-foreground">
-          <p>
-            Weather data updates every 3 hours • Last updated:{" "}
-            {new Date().toLocaleTimeString()}
-          </p>
-        </div>
       </div>
     </main>
   );

@@ -9,7 +9,6 @@ import { toast } from "sonner";
 import { updateUserPassword } from "@/actions/user.action";
 import { useRouter } from "next/navigation";
 import React from "react";
-import { useSession } from "next-auth/react";
 import z from "zod";
 import {
   Form,
