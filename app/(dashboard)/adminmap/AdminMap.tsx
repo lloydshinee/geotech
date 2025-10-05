@@ -80,6 +80,8 @@ export default function AdminMap({
       const drawControl = new L.Control.Draw({
         draw: {
           polyline: false,
+          circle: false,
+          circlemarker: false
         },
       });
       map.addControl(drawControl);
@@ -191,7 +193,7 @@ export default function AdminMap({
 
   return (
     <>
-      <div id="admin-map" className="w-full h-[90vh]" />
+      <div id="admin-map" className="w-full h-[70vh]" />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
