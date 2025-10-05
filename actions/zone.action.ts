@@ -70,3 +70,49 @@ export async function getActiveZones() {
     console.log(error);
   }
 }
+
+export async function updateZone(zoneId: number, data: FormData) {
+  try {
+    const geoJson = JSON.parse(data.get("geoJson") as string);
+
+    const updatedZone = await prisma.zone.update({
+      where: { id: zoneId },
+      data: {
+        name: data.get("name") as string,
+        description: data.get("description") as string,
+        status: data.get("status") as ZoneStatus,
+        geoJson,
+        disasterType: data.get("disasterType") as DisasterType,
+        dangerLevel: data.get("dangerLevel") as DangerLevel,
+      },
+    });
+    revalidatePath("/");
+    return updatedZone;
+  } catch (error) {
+    console.error(error);
+    throw new Error("Failed to update zone");
+  }
+}
+
+export async function deleteZone(zoneId: number) {
+  try {
+    await prisma.zone.delete({ where: { id: zoneId } });
+    revalidatePath("/");
+  } catch (error) {
+    console.error(error);
+    throw new Error("Failed to delete zone");
+  }
+}
+export async function changeZoneStatus(zoneId: number, newStatus: string) {
+  try {
+    const updatedZone = await prisma.zone.update({
+      where: { id: zoneId },
+      data: { status: newStatus as ZoneStatus },
+    });
+    revalidatePath("/");
+    return updatedZone;
+  } catch (error) {
+    console.error(error);
+    throw new Error("Failed to change zone status");
+  }
+}

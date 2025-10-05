@@ -106,7 +106,7 @@ model Zone {
 
 model Discussion {
   id        Int                 @id @default(autoincrement())
-  zone      Zone                @relation(fields: [zoneId], references: [id])
+  zone      Zone                @relation(fields: [zoneId], references: [id], onDelete: Cascade)
   zoneId    Int                 @unique
   content   String
   createdAt DateTime            @default(now())
@@ -119,7 +119,7 @@ model Discussion {
 
 model DiscussionComment {
   id           Int        @id @default(autoincrement())
-  discussion   Discussion @relation(fields: [discussionId], references: [id])
+  discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
   discussionId Int
   author       String
   content      String
@@ -134,13 +134,20 @@ model DiscussionComment {
   downvotes Int @default(0)
 }
 
+enum AffectedUserLocationStatus {
+  SAFE
+  AT_RISK
+  EVACUATED
+}
+
 model AffectedUserLocation {
-  id             Int          @id @default(autoincrement())
-  zone           Zone         @relation(fields: [zoneId], references: [id])
+  id             Int                         @id @default(autoincrement())
+  zone           Zone                        @relation(fields: [zoneId], references: [id], onDelete: Cascade)
   zoneId         Int
-  userLocation   UserLocation @relation(fields: [userLocationId], references: [id])
+  status         AffectedUserLocationStatus?
+  userLocation   UserLocation                @relation(fields: [userLocationId], references: [id])
   userLocationId Int
-  createdAt      DateTime     @default(now())
+  createdAt      DateTime                    @default(now())
 
   @@unique([zoneId, userLocationId])
 }

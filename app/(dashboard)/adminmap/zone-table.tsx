@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -10,8 +11,58 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import AdminMapForm from "./admin-map-form";
+import { Button } from "@/components/ui/button";
+import { changeZoneStatus, deleteZone } from "@/actions/zone.action";
 
 export default function ZoneTable({ zones }: { zones: any[] }) {
+  const [zoneList, setZoneList] = useState(zones);
+  const [editingZone, setEditingZone] = useState<any | null>(null);
+
+  const handleStatusChange = async (zoneId: number, newStatus: string) => {
+    setZoneList((prev) =>
+      prev.map((z) => (z.id === zoneId ? { ...z, status: newStatus } : z))
+    );
+    await changeZoneStatus(zoneId, newStatus);
+    console.log(`Zone ${zoneId} status changed to ${newStatus}`);
+  };
+
+  const handleDelete = async (zoneId: number) => {
+    console.log(`Delete zone ${zoneId}`);
+    await deleteZone(zoneId);
+    setZoneList((prev) => prev.filter((z) => z.id !== zoneId));
+  };
+
+  const handleSave = (updatedData: any) => {
+    console.log(updatedData);
+    setZoneList((prev) =>
+      prev.map((z) => (z.id === updatedData.id ? updatedData : z))
+    );
+    setEditingZone(null);
+  };
+
   return (
     <div className="rounded-2xl border shadow-sm bg-card m-4">
       <Table>
@@ -24,11 +75,12 @@ export default function ZoneTable({ zones }: { zones: any[] }) {
             <TableHead>Danger Level</TableHead>
             <TableHead>Affected Locations</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
 
         <TableBody>
-          {zones?.map((zone) => (
+          {zoneList?.map((zone) => (
             <TableRow key={zone.id}>
               <TableCell className="font-medium">{zone.name}</TableCell>
               <TableCell>{zone.description ?? "-"}</TableCell>
@@ -50,16 +102,65 @@ export default function ZoneTable({ zones }: { zones: any[] }) {
               </TableCell>
               <TableCell>{zone.affectedUserLocations?.length ?? 0}</TableCell>
               <TableCell>
-                <Badge
-                  variant={zone.status === "ACTIVE" ? "default" : "secondary"}
+                <Select
+                  value={zone.status}
+                  onValueChange={(val) => handleStatusChange(zone.id, val)}
                 >
-                  {zone.status}
-                </Badge>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+                    <SelectItem value="RESOLVED">RESOLVED</SelectItem>
+                  </SelectContent>
+                </Select>
+              </TableCell>
+              <TableCell>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="p-2 rounded">
+                      <MoreHorizontal size={20} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setEditingZone(zone)}>
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleDelete(zone.id)}>
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+      {editingZone && (
+        <Dialog open={!!editingZone} onOpenChange={() => setEditingZone(null)}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Edit Zone</DialogTitle>
+              <DialogDescription>
+                Update zone information below.
+              </DialogDescription>
+            </DialogHeader>
+
+            <AdminMapForm
+              formType="zone"
+              defaultValues={editingZone}
+              onChange={(data) => setEditingZone(data)}
+            />
+
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setEditingZone(null)}>
+                Cancel
+              </Button>
+              <Button onClick={() => handleSave(editingZone)}>Save</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
