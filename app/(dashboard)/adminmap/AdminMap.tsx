@@ -30,6 +30,7 @@ import { Facility, Zone } from "@prisma/client";
 import { createFacility } from "@/actions/facility.action";
 import { createZone } from "@/actions/zone.action";
 import AdminMapForm from "./admin-map-form";
+import { getDisasterIconHTML, getFacilityIconHTML } from "@/lib/icons";
 
 export default function AdminMap({
   facilities,
@@ -81,7 +82,7 @@ export default function AdminMap({
         draw: {
           polyline: false,
           circle: false,
-          circlemarker: false
+          circlemarker: false,
         },
       });
       map.addControl(drawControl);
@@ -110,27 +111,56 @@ export default function AdminMap({
 
     // Render existing facilities
     facilities.forEach((f) => {
-      L.marker([f.latitude, f.longitude])
+      L.marker([f.latitude, f.longitude], {
+        icon: L.divIcon({
+          html: getFacilityIconHTML(f.type),
+          className: "custom-marker", // optional wrapper class
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+        }),
+      })
         .addTo(map)
         .bindPopup(`<strong>${f.name}</strong><br/>${f.type}`);
     });
 
-    // Render existing zones
     zones.forEach((z) => {
-      L.geoJSON(z.geoJson as any, {
-        style: {
-          color:
-            z.dangerLevel === "HIGH"
-              ? "red"
-              : z.dangerLevel === "MEDIUM"
-              ? "orange"
-              : "green",
-        },
-      })
-        .addTo(map)
-        .bindPopup(
-          `<strong>${z.name}</strong><br/>${z.disasterType} (${z.dangerLevel})`
-        );
+      // Determine color from danger level
+      const color =
+        z.dangerLevel === "HIGH"
+          ? "red"
+          : z.dangerLevel === "MEDIUM"
+          ? "orange"
+          : "green";
+
+      // Create the GeoJSON layer
+      const layer = L.geoJSON(z.geoJson as any, {
+        style: { color },
+      }).addTo(map);
+
+      // Build the popup HTML
+      const popupHTML = `
+    <div class="p-1 text-sm">
+      <div class="flex items-center gap-2">
+        ${getDisasterIconHTML(z.disasterType)}
+        <strong>${z.name}</strong>
+      </div>
+      <div class="mt-1">
+        <span class="font-semibold">Disaster:</span> ${z.disasterType}<br/>
+        <span class="font-semibold">Danger:</span>
+        <span class="${
+          z.dangerLevel === "HIGH"
+            ? "text-red-600"
+            : z.dangerLevel === "MEDIUM"
+            ? "text-orange-500"
+            : "text-green-600"
+        }">
+          ${z.dangerLevel}
+        </span>
+      </div>
+    </div>
+  `;
+
+      layer.bindPopup(popupHTML);
     });
   }, [facilities, zones]);
 
