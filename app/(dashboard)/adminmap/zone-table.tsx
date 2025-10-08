@@ -35,7 +35,11 @@ import {
 } from "@/components/ui/dialog";
 import AdminMapForm from "./admin-map-form";
 import { Button } from "@/components/ui/button";
-import { changeZoneStatus, deleteZone } from "@/actions/zone.action";
+import {
+  changeZoneStatus,
+  deleteZone,
+  updateZone,
+} from "@/actions/zone.action";
 
 export default function ZoneTable({ zones }: { zones: any[] }) {
   const [zoneList, setZoneList] = useState(zones);
@@ -55,8 +59,16 @@ export default function ZoneTable({ zones }: { zones: any[] }) {
     setZoneList((prev) => prev.filter((z) => z.id !== zoneId));
   };
 
-  const handleSave = (updatedData: any) => {
+  const handleSave = async (updatedData: any) => {
     console.log(updatedData);
+
+    const formData = new FormData();
+    formData.append("id", updatedData.id);
+    formData.append("name", updatedData.name);
+    formData.append("description", updatedData.description || "");
+
+    await updateZone(updatedData.id, formData);
+
     setZoneList((prev) =>
       prev.map((z) => (z.id === updatedData.id ? updatedData : z))
     );

@@ -25,7 +25,8 @@ model User {
   updatedAt DateTime @updatedAt
 
   // ✅ One user -> many saved locations
-  locations UserLocation[]
+  locations         UserLocation[]
+  DiscussionComment DiscussionComment[]
 }
 
 model UserLocation {
@@ -121,10 +122,14 @@ model DiscussionComment {
   id           Int        @id @default(autoincrement())
   discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
   discussionId Int
-  author       String
-  content      String
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+
+  // ✅ Link to User
+  author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId Int
+
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   parentId Int?
   parent   DiscussionComment?  @relation("CommentReplies", fields: [parentId], references: [id])

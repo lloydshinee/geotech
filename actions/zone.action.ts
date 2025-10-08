@@ -20,9 +20,7 @@ export async function createZone(data: FormData) {
         dangerLevel: data.get("dangerLevel") as DangerLevel,
         discussion: {
           create: {
-            content: `Discussion for zone ${data.get("name")} \n ${data.get(
-              "description"
-            )}`,
+            content: `${data.get("description")}`,
           },
         },
       },
@@ -55,6 +53,7 @@ export async function getZones() {
   try {
     return await prisma.zone.findMany({
       include: { affectedUserLocations: true },
+      orderBy: { createdAt: "desc" },
     });
   } catch (error) {
     console.log(error);
@@ -73,17 +72,11 @@ export async function getActiveZones() {
 
 export async function updateZone(zoneId: number, data: FormData) {
   try {
-    const geoJson = JSON.parse(data.get("geoJson") as string);
-
     const updatedZone = await prisma.zone.update({
       where: { id: zoneId },
       data: {
         name: data.get("name") as string,
         description: data.get("description") as string,
-        status: data.get("status") as ZoneStatus,
-        geoJson,
-        disasterType: data.get("disasterType") as DisasterType,
-        dangerLevel: data.get("dangerLevel") as DangerLevel,
       },
     });
     revalidatePath("/");

@@ -28,3 +28,27 @@ export async function getFacilities() {
     console.log(error);
   }
 }
+
+export async function deleteFacility(facilityId: number) {
+  try {
+    await prisma.facility.delete({ where: { id: facilityId } });
+    revalidatePath("/");
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+export async function updateFacility(facilityId: number, data: FormData) {
+  try {
+    await prisma.facility.update({
+      where: { id: facilityId },
+      data: {
+        name: data.get("name") as string,
+        type: data.get("type") as FacilityType,
+      },
+    });
+    revalidatePath("/");
+  } catch (error) {
+    console.log(error);
+  }
+}

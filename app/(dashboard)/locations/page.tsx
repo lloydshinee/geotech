@@ -14,7 +14,9 @@ export default async function LocationsPage() {
   return (
     <main className="space-y-4 rounded-none">
       <SiteHeader title="Locations" />
-      <AddLocationBanner />
+      <section className="p-4">
+        <AddLocationBanner />
+      </section>
       <section>
         {locations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] text-center px-4">

@@ -45,8 +45,6 @@ export default function AdminMap({
     lat: number;
     lng: number;
   } | null>(null);
-
-  // Dialog + form state
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<"facility" | "zone" | "">("");
   const [formData, setFormData] = useState<any>({});
@@ -83,6 +81,14 @@ export default function AdminMap({
           polyline: false,
           circle: false,
           circlemarker: false,
+          marker: {
+            icon: L.divIcon({
+              html: '<div class="w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-lg"></div>',
+              className: "custom-marker",
+              iconSize: [16, 16],
+              iconAnchor: [8, 8],
+            }),
+          },
         },
       });
       map.addControl(drawControl);
@@ -102,19 +108,27 @@ export default function AdminMap({
           setDrawnLatLng(null);
         }
 
-        setLastLayer(layer); // save reference
-        setOpen(true); // open dialog
+        setLastLayer(layer);
+        setOpen(true);
       });
     }
 
     const map = mapRef.current!;
+    if (!map) return;
 
-    // Render existing facilities
+    // ✅ Clear all existing layers except the base tiles
+    map.eachLayer((layer) => {
+      if (!(layer instanceof L.TileLayer)) {
+        map.removeLayer(layer);
+      }
+    });
+
+    // ✅ Render Facilities
     facilities.forEach((f) => {
       L.marker([f.latitude, f.longitude], {
         icon: L.divIcon({
           html: getFacilityIconHTML(f.type),
-          className: "custom-marker", // optional wrapper class
+          className: "custom-marker",
           iconSize: [24, 24],
           iconAnchor: [12, 12],
         }),
@@ -123,8 +137,8 @@ export default function AdminMap({
         .bindPopup(`<strong>${f.name}</strong><br/>${f.type}`);
     });
 
+    // ✅ Render Zones
     zones.forEach((z) => {
-      // Determine color from danger level
       const color =
         z.dangerLevel === "HIGH"
           ? "red"
@@ -132,33 +146,29 @@ export default function AdminMap({
           ? "orange"
           : "green";
 
-      // Create the GeoJSON layer
-      const layer = L.geoJSON(z.geoJson as any, {
-        style: { color },
-      }).addTo(map);
+      const layer = L.geoJSON(z.geoJson as any, { style: { color } }).addTo(
+        map
+      );
 
-      // Build the popup HTML
       const popupHTML = `
-    <div class="p-1 text-sm">
-      <div class="flex items-center gap-2">
-        ${getDisasterIconHTML(z.disasterType)}
-        <strong>${z.name}</strong>
-      </div>
-      <div class="mt-1">
-        <span class="font-semibold">Disaster:</span> ${z.disasterType}<br/>
-        <span class="font-semibold">Danger:</span>
-        <span class="${
-          z.dangerLevel === "HIGH"
-            ? "text-red-600"
-            : z.dangerLevel === "MEDIUM"
-            ? "text-orange-500"
-            : "text-green-600"
-        }">
-          ${z.dangerLevel}
-        </span>
-      </div>
-    </div>
-  `;
+        <div class="p-1 text-sm">
+          <div class="flex items-center gap-2">
+            ${getDisasterIconHTML(z.disasterType)}
+            <strong>${z.name}</strong>
+          </div>
+          <div class="mt-1">
+            <span class="font-semibold">Disaster:</span> ${z.disasterType}<br/>
+            <span class="font-semibold">Danger:</span>
+            <span class="${
+              z.dangerLevel === "HIGH"
+                ? "text-red-600"
+                : z.dangerLevel === "MEDIUM"
+                ? "text-orange-500"
+                : "text-green-600"
+            }">${z.dangerLevel}</span>
+          </div>
+        </div>
+      `;
 
       layer.bindPopup(popupHTML);
     });
@@ -166,6 +176,10 @@ export default function AdminMap({
 
   const handleSubmit = async () => {
     try {
+      const map = mapRef.current;
+      if (!map) return;
+
+      // ✅ FACILITY
       if (type === "facility" && drawnLatLng) {
         const facilityData = new FormData();
         facilityData.append("name", formData.name);
@@ -174,13 +188,27 @@ export default function AdminMap({
         facilityData.append("longitude", drawnLatLng.lng.toString());
 
         await createFacility(facilityData);
-        toast.success(`${formData.name} facility has been added.`);
+
+        // Add to map instantly
+        L.marker([drawnLatLng.lat, drawnLatLng.lng], {
+          icon: L.divIcon({
+            html: getFacilityIconHTML(formData.type),
+            className: "custom-marker",
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
+          }),
+        })
+          .addTo(map)
+          .bindPopup(`<strong>${formData.name}</strong><br/>${formData.type}`);
+
+        toast.success(`${formData.name} facility added.`);
       }
 
+      // ✅ ZONE
       if (type === "zone" && drawnGeoJson) {
         const zoneData = new FormData();
         zoneData.append("name", formData.name);
-        zoneData.append("description", formData.description);
+        zoneData.append("description", formData.description || "");
         zoneData.append("status", "ACTIVE");
         zoneData.append("disasterType", formData.disasterType);
         zoneData.append("dangerLevel", formData.dangerLevel);
@@ -188,42 +216,43 @@ export default function AdminMap({
 
         await createZone(zoneData);
 
-        // Remove the temporary blue layer
-        if (lastLayer && mapRef.current) {
-          mapRef.current.removeLayer(lastLayer);
-        }
+        // Remove the temporary drawn layer
+        if (lastLayer) map.removeLayer(lastLayer);
 
-        // Add with your custom style
-        L.geoJSON(drawnGeoJson as any, {
-          style: {
-            color:
-              formData.dangerLevel === "HIGH"
-                ? "red"
-                : formData.dangerLevel === "MEDIUM"
-                ? "orange"
-                : "green",
-          },
-        })
-          .addTo(mapRef.current!)
+        const color =
+          formData.dangerLevel === "HIGH"
+            ? "red"
+            : formData.dangerLevel === "MEDIUM"
+            ? "orange"
+            : "green";
+
+        L.geoJSON(drawnGeoJson as any, { style: { color } })
+          .addTo(map)
           .bindPopup(
             `<strong>${formData.name}</strong><br/>${formData.disasterType} (${formData.dangerLevel})`
           );
 
-        toast.success(`${formData.name} zone has been added.`);
+        toast.success(`${formData.name} zone added.`);
       }
 
+      // ✅ Reset states
       setOpen(false);
       setFormData({});
       setType("");
+      setDrawnGeoJson(null);
+      setDrawnLatLng(null);
     } catch (err) {
+      console.error(err);
       toast.error("Error saving data. Please try again.");
-      console.log(err);
     }
   };
 
   return (
     <>
-      <div id="admin-map" className="w-full h-[70vh]" />
+      <div
+        id="admin-map"
+        className="w-full h-[70vh] rounded-lg shadow-md border"
+      />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
@@ -234,9 +263,9 @@ export default function AdminMap({
           </DialogHeader>
 
           <div className="space-y-4">
-            <Select onValueChange={(v: any) => setType(v)}>
+            <Select onValueChange={(v: any) => setType(v)} defaultValue={type}>
               <SelectTrigger>
-                <SelectValue placeholder="Select type" />
+                <SelectValue placeholder="Select Type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="facility">Facility</SelectItem>
@@ -247,7 +276,7 @@ export default function AdminMap({
             {type && (
               <AdminMapForm
                 formType={type}
-                defaultValues={formData} // supports editing
+                defaultValues={formData}
                 onChange={(data) => setFormData(data)}
               />
             )}

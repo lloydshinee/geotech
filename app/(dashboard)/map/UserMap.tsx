@@ -7,6 +7,7 @@ import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 import "leaflet.fullscreen/Control.FullScreen.css";
 import "leaflet.fullscreen";
+import { getDisasterIconHTML, getFacilityIconHTML } from "@/lib/icons";
 
 declare module "leaflet" {
   namespace control {
@@ -75,39 +76,58 @@ export default function UserMap({
       markers.push(marker);
     });
 
-    // ✅ Facilities (blue pulsing marker)
+    // Render existing facilities
     facilities.forEach((f) => {
-      const marker = L.marker([f.latitude, f.longitude], {
+      L.marker([f.latitude, f.longitude], {
         icon: L.divIcon({
-          html: `<div class="w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-lg animate-pulse"></div>`,
-          className: "custom-marker",
-          iconSize: [16, 16],
-          iconAnchor: [8, 8],
+          html: getFacilityIconHTML(f.type),
+          className: "custom-marker", // optional wrapper class
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
         }),
-      }).addTo(map);
-
-      marker.bindPopup(`<strong>${f.name}</strong><br/>${f.type}`);
-      markers.push(marker);
-    });
-
-    // ✅ Zones (colored polygons)
-    zones.forEach((z) => {
-      L.geoJSON(z.geoJson as any, {
-        style: {
-          color:
-            z.dangerLevel === "HIGH"
-              ? "red"
-              : z.dangerLevel === "MEDIUM"
-              ? "orange"
-              : "green",
-          weight: 2,
-          fillOpacity: 0.3,
-        },
       })
         .addTo(map)
-        .bindPopup(
-          `<strong>${z.name}</strong><br/>${z.disasterType} (${z.dangerLevel})`
-        );
+        .bindPopup(`<strong>${f.name}</strong><br/>${f.type}`);
+    });
+
+    zones.forEach((z) => {
+      // Determine color from danger level
+      const color =
+        z.dangerLevel === "HIGH"
+          ? "red"
+          : z.dangerLevel === "MEDIUM"
+          ? "orange"
+          : "green";
+
+      // Create the GeoJSON layer
+      const layer = L.geoJSON(z.geoJson as any, {
+        style: { color },
+      }).addTo(map);
+
+      // Build the popup HTML
+      const popupHTML = `
+      <div class="p-1 text-sm">
+        <div class="flex items-center gap-2">
+          ${getDisasterIconHTML(z.disasterType)}
+          <strong>${z.name}</strong>
+        </div>
+        <div class="mt-1">
+          <span class="font-semibold">Disaster:</span> ${z.disasterType}<br/>
+          <span class="font-semibold">Danger:</span>
+          <span class="${
+            z.dangerLevel === "HIGH"
+              ? "text-red-600"
+              : z.dangerLevel === "MEDIUM"
+              ? "text-orange-500"
+              : "text-green-600"
+          }">
+            ${z.dangerLevel}
+          </span>
+        </div>
+      </div>
+    `;
+
+      layer.bindPopup(popupHTML);
     });
 
     // ✅ Fit map bounds to all features
