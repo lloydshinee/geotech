@@ -26,7 +26,9 @@ export async function getDiscussionById(id: number) {
       where: { id },
       include: {
         zone: {
-          include: { affectedUserLocations: true },
+          include: { affectedUserLocations: {
+            include: {userLocation: true}
+          } },
         },
         comments: true,
       },

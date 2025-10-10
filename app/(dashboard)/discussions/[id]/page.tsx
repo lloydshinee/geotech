@@ -252,7 +252,7 @@ export default async function DiscussionPage({
               discussion.comments.map((comment) => {
                 // Check if user is affected by checking if their location is in affectedUserLocations
                 const isAffected = discussion.zone.affectedUserLocations.some(
-                  (affected) => affected.userLocationId === comment.authorId
+                  (affected) => affected.userLocation.userId === comment.authorId
                 );
 
                 return (
