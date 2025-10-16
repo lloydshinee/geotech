@@ -10,3 +10,11 @@ export type DiscussionWithZone = Prisma.DiscussionGetPayload<{
     };
   };
 }>;
+
+export type FullUserLocation = Prisma.UserLocationGetPayload<{
+  include: {
+    affectedUserLocations: {
+      include: { zone: true };
+    };
+  };
+}>;

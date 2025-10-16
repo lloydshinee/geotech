@@ -1,6 +1,7 @@
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ModeToggle } from "./mode-toggle";
+import { NotificationsDropdown } from "./notifications-dropdown";
 
 export function SiteHeader({ title }: { title: string }) {
   return (
@@ -13,7 +14,8 @@ export function SiteHeader({ title }: { title: string }) {
         />
         <h1 className="text-base font-medium">{title}</h1>
       </div>
-      <div className="px-6">
+      <div className="px-6 flex items-center gap-2 ml-auto">
+        <NotificationsDropdown />
         <ModeToggle />
       </div>
     </header>

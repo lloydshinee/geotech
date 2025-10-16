@@ -63,16 +63,6 @@ const data = {
       url: "/settings",
       icon: IconSettings,
     },
-    {
-      title: "Get Help",
-      url: "/help",
-      icon: IconHelp,
-    },
-    {
-      title: "Search",
-      url: "/search",
-      icon: IconSearch,
-    },
   ],
   adminNav: [
     {

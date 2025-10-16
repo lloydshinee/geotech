@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { NotificationsProvider } from "@/providers/NotoficationsProvider";
 import { redirect } from "next/navigation";
 
 export default async function DashboardLayout({
@@ -23,8 +24,10 @@ export default async function DashboardLayout({
         } as React.CSSProperties
       }
     >
-      <AppSidebar variant="inset" />
-      <SidebarInset>{children}</SidebarInset>
+      <NotificationsProvider>
+        <AppSidebar variant="inset" />
+        <SidebarInset>{children}</SidebarInset>
+      </NotificationsProvider>
     </SidebarProvider>
   );
 }

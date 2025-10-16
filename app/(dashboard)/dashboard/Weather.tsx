@@ -17,10 +17,24 @@ import {
   Cloud,
   CloudRain,
   Snowflake,
+  AlertTriangle,
+  ShieldAlert,
 } from "lucide-react";
-import { UserLocation } from "@prisma/client";
 import { getUserLocations } from "@/actions/locations.action";
 import { AddLocationFAB } from "../locations/new/add-location";
+import { FullUserLocation } from "@/lib/types";
+import Link from "next/link";
+import { useNotifications } from "@/providers/NotoficationsProvider";
+
+/** Minimal warning type for props */
+type AffectedWarning = {
+  zoneId: number;
+  zoneName: string;
+  zoneDescription?: string | null;
+  disasterType: string;
+  dangerLevel: string;
+  active: boolean;
+};
 
 interface WeatherData {
   city: {
@@ -73,12 +87,14 @@ const WeatherCard = ({
   lon,
   useGeolocation = false,
   icon,
+  warnings = [],
 }: {
   title: string;
   lat?: number;
   lon?: number;
   useGeolocation?: boolean;
   icon: React.ReactNode;
+  warnings?: AffectedWarning[]; // new prop - warnings for this location
 }) => {
   const [forecast, setForecast] = useState<WeatherData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -134,7 +150,11 @@ const WeatherCard = ({
     } else if (lat && lon) {
       fetchForecast(lat, lon);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lon, useGeolocation]);
+
+  // Determine active warnings (only those with active === true)
+  const activeWarnings = warnings.filter((w) => w.active);
 
   if (loading) {
     return (
@@ -185,7 +205,54 @@ const WeatherCard = ({
 
   return (
     <Card>
-      <CardHeader className="pb-3">
+      {/* If there are active warnings, show a red banner at top of card */}
+      {activeWarnings.length > 0 && (
+        <div className="bg-red-50 border border-red-200 dark:bg-red-950/20 dark:border-red-800 p-3 rounded-t">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5" />
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-red-700">
+                    {activeWarnings.length === 1
+                      ? `Warning: ${activeWarnings[0].zoneName}`
+                      : `${activeWarnings.length} active warnings`}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {activeWarnings[0]?.zoneDescription ??
+                      "Please review the warnings for this area."}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="text-xs uppercase text-red-700 font-medium tracking-wide">
+                    {activeWarnings[0].dangerLevel}
+                  </div>
+                  <Button size="sm" variant="destructive">
+                    <Link href="/map">View on Map</Link>
+                  </Button>
+                </div>
+              </div>
+
+              {/* If multiple warnings, show a small list */}
+              {activeWarnings.length > 1 && (
+                <ul className="mt-2 text-xs text-muted-foreground space-y-1">
+                  {activeWarnings.map((w) => (
+                    <li key={w.zoneId} className="flex items-center gap-2">
+                      <ShieldAlert className="w-3 h-3" />
+                      <span>
+                        {w.zoneName} — {w.dangerLevel}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <CardHeader className={`pb-3 ${activeWarnings.length > 0 ? "pt-4" : ""}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {icon}
@@ -229,28 +296,28 @@ const WeatherCard = ({
         {/* Weather Details */}
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-center gap-2 text-sm">
-            <Droplets className="w-4 h-4 text-blue-500" />
+            <Droplets className="w-4 h-4" />
             <span className="text-muted-foreground">Humidity</span>
             <span className="ml-auto font-medium">
               {currentWeather.main.humidity}%
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <Wind className="w-4 h-4 text-green-500" />
+            <Wind className="w-4 h-4" />
             <span className="text-muted-foreground">Wind</span>
             <span className="ml-auto font-medium">
               {currentWeather.wind.speed} m/s
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <Gauge className="w-4 h-4 text-purple-500" />
+            <Gauge className="w-4 h-4" />
             <span className="text-muted-foreground">Pressure</span>
             <span className="ml-auto font-medium">
               {currentWeather.main.pressure} hPa
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <Eye className="w-4 h-4 text-orange-500" />
+            <Eye className="w-4 h-4" />
             <span className="text-muted-foreground">Visibility</span>
             <span className="ml-auto font-medium">
               {(currentWeather.visibility / 1000).toFixed(1)} km
@@ -294,16 +361,49 @@ const WeatherCard = ({
 };
 
 export default function WeatherDashboard({ userId }: { userId: number }) {
-  const [locations, setLocations] = useState<UserLocation[]>([]);
+  const [locations, setLocations] = useState<FullUserLocation[]>([]);
+  const { addNotification, clearNotifications } = useNotifications();
 
   useEffect(() => {
     const fetchUserLocations = async () => {
+      clearNotifications(); // clear old ones
       const data = await getUserLocations(userId);
       setLocations(data);
+
+      // check for active zones
+      data.forEach((loc) => {
+        loc.affectedUserLocations.forEach((aff) => {
+          if (aff.zone.status === "ACTIVE") {
+            addNotification({
+              id: `${aff.zone.id}-${loc.id}`,
+              title: `⚠️ ${aff.zone.disasterType} Alert`,
+              message: `${
+                loc.name
+              } is within an active ${aff.zone.disasterType.toLowerCase()} zone (${
+                aff.zone.dangerLevel
+              })`,
+              type: "danger",
+              timestamp: new Date(),
+            });
+          }
+        });
+      });
     };
 
     fetchUserLocations();
   }, [userId]);
+
+  // convert affectedUserLocations to AffectedWarning for each location
+  const toWarnings = (loc: FullUserLocation): AffectedWarning[] => {
+    return (loc.affectedUserLocations ?? []).map((a) => ({
+      zoneId: a.zone.id,
+      zoneName: a.zone.name,
+      zoneDescription: a.zone.description,
+      disasterType: a.zone.disasterType,
+      dangerLevel: a.zone.dangerLevel,
+      active: a.zone.status === "ACTIVE" || a.zone.status === "RESOLVED", // be tolerant
+    }));
+  };
 
   return (
     <main className="min-h-screen bg-background">
@@ -315,6 +415,7 @@ export default function WeatherDashboard({ userId }: { userId: number }) {
             title="My Location"
             useGeolocation
             icon={<Navigation className="w-5 h-5 text-primary" />}
+            warnings={[]} // geolocation card: no server warnings unless you compute them
           />
 
           <WeatherCard
@@ -322,7 +423,9 @@ export default function WeatherDashboard({ userId }: { userId: number }) {
             lat={8.1713}
             lon={124.2152}
             icon={<MapPin className="w-5 h-5 text-primary" />}
+            warnings={[]}
           />
+
           {locations.map((loc) => (
             <WeatherCard
               key={loc.id}
@@ -330,6 +433,7 @@ export default function WeatherDashboard({ userId }: { userId: number }) {
               lat={loc.latitude}
               lon={loc.longitude}
               icon={<MapPin className="w-5 h-5 text-primary" />}
+              warnings={toWarnings(loc)}
             />
           ))}
         </div>

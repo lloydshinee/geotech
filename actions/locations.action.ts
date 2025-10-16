@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 import { point } from "@turf/helpers";
 import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
 
-
 export async function createLocation(data: FormData) {
   try {
     // Create new user location
@@ -108,10 +107,21 @@ export async function updateLocation(id: string, formData: FormData) {
   }
 }
 
-
 export async function getUserLocations(userId: number) {
   try {
-    return await prisma.userLocation.findMany({ where: { userId } });
+    return await prisma.userLocation.findMany({
+      where: { userId },
+      include: {
+        affectedUserLocations: {
+          where: {
+            zone: {
+              status: "ACTIVE",
+            },
+          },
+          include: { zone: true },
+        },
+      },
+    });
   } catch (error) {
     console.log(error);
     throw new Error("Error");
