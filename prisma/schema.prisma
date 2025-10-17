@@ -15,14 +15,15 @@ enum Role {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  firstName String
-  lastName  String
-  password  String
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  firstName   String
+  lastName    String
+  password    String
+  role        Role     @default(USER)
+  phoneNumber String?  @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // ✅ One user -> many saved locations
   locations         UserLocation[]
@@ -150,6 +151,7 @@ model AffectedUserLocation {
   zone           Zone                        @relation(fields: [zoneId], references: [id], onDelete: Cascade)
   zoneId         Int
   status         AffectedUserLocationStatus?
+  isNotifiend    Boolean                     @default(false)
   userLocation   UserLocation                @relation(fields: [userLocationId], references: [id])
   userLocationId Int
   createdAt      DateTime                    @default(now())

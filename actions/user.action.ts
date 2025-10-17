@@ -1,6 +1,7 @@
 "use server";
 
 import { PasswordFormData } from "@/app/(dashboard)/settings/update-password-form";
+import { UpdatePhoneNumberFormData } from "@/app/(dashboard)/settings/update-phoneNumber-form";
 import { UpdateUserFormData } from "@/app/(dashboard)/settings/update-user-form";
 import prisma from "@/lib/prisma";
 
@@ -37,6 +38,20 @@ export async function updateUserPassword(
     await prisma.user.update({
       where: { id: userId },
       data: { password: data.newPassword },
+    });
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+export async function updateUserPhoneNumber(
+  userId: number,
+  data: UpdatePhoneNumberFormData
+) {
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { phoneNumber: data.phoneNumber },
     });
   } catch (error) {
     console.log(error);
