@@ -27,7 +27,7 @@ export async function createZone(data: FormData) {
     });
 
     // ✅ Find affected user locations
-    const userLocations = await prisma.userLocation.findMany();
+    const userLocations = await prisma.userLocation.findMany({});
     const affected: { zoneId: number; userLocationId: number }[] = [];
 
     userLocations.forEach((loc) => {

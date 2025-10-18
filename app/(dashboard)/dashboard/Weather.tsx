@@ -25,6 +25,7 @@ import { AddLocationFAB } from "../locations/new/add-location";
 import { FullUserLocation } from "@/lib/types";
 import Link from "next/link";
 import { useNotifications } from "@/providers/NotoficationsProvider";
+import { RainWarnings } from "./RainWarnings";
 
 /** Minimal warning type for props */
 type AffectedWarning = {
@@ -440,6 +441,9 @@ export default function WeatherDashboard({ userId }: { userId: number }) {
 
         <AddLocationFAB />
       </div>
+      <section className="p-4">
+        <RainWarnings />
+      </section>
     </main>
   );
 }
